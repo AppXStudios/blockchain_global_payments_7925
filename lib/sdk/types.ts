@@ -1,6 +1,3 @@
-// lib/sdk/types.ts - UNIFIED TYPE DEFINITIONS FOR BGP PLATFORM
-// Single source of truth for all TypeScript interfaces
-
 export interface Merchant {
   id: string;
   email?: string;

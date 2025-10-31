@@ -5,21 +5,8 @@
 // Export all types with proper named exports
 export * from './types';
 
-// Export error classes
-export * from './errors';
-
-// Export utilities
-export * from './utils';
-
-// Export HTTP client
-export * from './client';
-
 // Export main API interface
 export * from './api';
-
-// Main bgp instance - Fixed export to use proper named export
-import { bgp } from './api';
-export { bgp };
 
 /**
  * SDK Version
@@ -43,7 +30,6 @@ export const SDK_INFO = {
  * Default export for backward compatibility
  */
 const SDK = {
-  bgp,
   SDK_VERSION,
   SDK_INFO
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
-import { bgp } from '@/lib/sdk';
+import { api } from '@/lib/sdk';
 
 const CreatePaymentModal = ({ isOpen, onClose, onPaymentCreated }) => {
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ const CreatePaymentModal = ({ isOpen, onClose, onPaymentCreated }) => {
       });
 
       // Create payment using SDK with proper error handling
-      const response = await bgp?.payments?.create(paymentData);
+      const response = await api.post('/payments', paymentData);
 
       if (response?.success === false) {
         throw new Error(response?.error || 'Failed to create payment');
