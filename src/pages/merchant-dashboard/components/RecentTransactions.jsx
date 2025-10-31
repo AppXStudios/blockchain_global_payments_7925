@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { formatCurrency } from '../../../lib/utils/formatCurrency';
 
 const RecentTransactions = ({ transactions, onViewAll }) => {
   const [sortField, setSortField] = useState('timestamp');
@@ -24,16 +25,6 @@ const RecentTransactions = ({ transactions, onViewAll }) => {
       case 'processing': return 'Loader';
       default: return 'Circle';
     }
-  };
-
-  const formatAmount = (amount, currency) => {
-    if (currency === 'USD') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-      })?.format(amount);
-    }
-    return `${amount} ${currency}`;
   };
 
   const formatDate = (date) => {
@@ -60,7 +51,7 @@ const RecentTransactions = ({ transactions, onViewAll }) => {
     
     if (sortField === 'timestamp') {
       aValue = new Date(aValue);
-      bValue = new Date(bValue);
+      bValue = new Date(bValue);  
     }
     
     if (sortDirection === 'asc') {
@@ -111,47 +102,52 @@ const RecentTransactions = ({ transactions, onViewAll }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {sortedTransactions?.slice(0, 5)?.map((transaction) => (
-              <tr key={transaction?.id} className="hover:bg-muted/10 transition-micro">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mr-3">
-                      <Icon name="Hash" size={14} className="text-muted-foreground" />
+            {sortedTransactions?.slice(0, 5)?.map((transaction) => {
+              // ✅ Apply failsafe patch - convert to uppercase and fallback to USD
+              const safeCurrency = (transaction?.currency || "USD")?.toUpperCase();
+              
+              return (
+                <tr key={transaction?.id} className="hover:bg-muted/10 transition-micro">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mr-3">
+                        <Icon name="Hash" size={14} className="text-muted-foreground" />
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{transaction?.id}</span>
                     </div>
-                    <span className="text-sm font-medium text-foreground">{transaction?.id}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction?.status)}`}>
-                    <Icon name={getStatusIcon(transaction?.status)} size={12} className="mr-1" />
-                    {transaction?.status}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-semibold text-foreground">
-                    {formatAmount(transaction?.amount, transaction?.currency)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="w-6 h-6 rounded-full bg-gradient-primary flex items-center justify-center mr-2">
-                      <span className="text-xs font-bold text-white">
-                        {transaction?.currency?.charAt(0)}
-                      </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction?.status)}`}>
+                      <Icon name={getStatusIcon(transaction?.status)} size={12} className="mr-1" />
+                      {transaction?.status}
                     </div>
-                    <span className="text-sm text-foreground">{transaction?.currency}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                  {formatDate(transaction?.timestamp)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Button variant="ghost" size="sm">
-                    <Icon name="Eye" size={14} />
-                  </Button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-semibold text-foreground">
+                      {formatCurrency(transaction?.amount, safeCurrency)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-6 h-6 rounded-full bg-gradient-primary flex items-center justify-center mr-2">
+                        <span className="text-xs font-bold text-white">
+                          {safeCurrency?.charAt(0)}
+                        </span>
+                      </div>
+                      <span className="text-sm text-foreground">{safeCurrency}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    {formatDate(transaction?.timestamp)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Button variant="ghost" size="sm">
+                      <Icon name="Eye" size={14} />
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

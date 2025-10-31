@@ -92,16 +92,13 @@ const InvoiceTable = ({
   };
 
   const openInvoicePreviewModal = (invoice) => {
-    // Mock modal trigger - in real implementation, this would open the InvoicePreviewModal
-    console.log('Opening InvoicePreviewModal for:', invoice?.id);
-    if (onInvoiceSelect) {
-      onInvoiceSelect(invoice);
-    }
+    // ✅ FIXED — Navigate to correct /dashboard/invoices/{id} route instead of modal
+    navigate(`/dashboard/invoices/${invoice?.id}`);
   };
 
   const openCreateInvoiceModal = () => {
-    // Mock modal trigger - in real implementation, this would open the CreateInvoiceModal
-    console.log('Opening CreateInvoiceModal');
+    // ✅ FIXED — Navigate to correct /dashboard/invoices/create route
+    navigate('/dashboard/invoices/create');
   };
 
   const handleSort = (key) => {
@@ -155,7 +152,7 @@ const InvoiceTable = ({
           <div className="flex items-center space-x-3">
             <Button
               variant="default"
-              onClick={openCreateInvoiceModal}
+              onClick={() => navigate('/dashboard/invoices/create')}
               className="gradient-primary"
               iconName="Plus"
               iconPosition="left"
@@ -242,7 +239,7 @@ const InvoiceTable = ({
                   className={`border-b border-border hover:bg-muted/30 cursor-pointer transition-micro ${
                     isSelected ? 'bg-primary/5' : ''
                   }`}
-                  onClick={() => openInvoicePreviewModal(invoice)}
+                  onClick={() => navigate(`/dashboard/invoices/${invoice?.id}`)}
                 >
                   <td className="py-4 px-6">
                     <input
@@ -300,7 +297,7 @@ const InvoiceTable = ({
                       size="sm"
                       onClick={(e) => {
                         e?.stopPropagation();
-                        openInvoicePreviewModal(invoice);
+                        navigate(`/dashboard/invoices/${invoice?.id}`);
                       }}
                     >
                       <Icon name="Eye" size={16} />

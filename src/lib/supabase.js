@@ -1,26 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Get the Supabase URL and Anon Key from environment variables
-const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL || "https://mnmbauwakbkubwvgdwzs.supabase.co";
+const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubWJhdXdha2JrdWJ3dmdkd3pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NjQxODQsImV4cCI6MjA3NzQ0MDE4NH0.bb1wcQDtQrzknle-gwGeKI3NqicZ7v3lSArQAqOMJZo";
 
-// Validate that the environment variables exist
-if (!supabaseUrl) {
-  throw new Error('Missing environment variable: VITE_SUPABASE_URL');
-}
-
-if (!supabaseAnonKey) {
-  throw new Error('Missing environment variable: VITE_SUPABASE_ANON_KEY');
-}
-
-// Create and export the Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-});
-
-// Export default client for backward compatibility
-export default supabase;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

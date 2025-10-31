@@ -5,207 +5,150 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const PaymentLinkCard = ({ link, onAnalytics, onEdit, onDelete }) => {
+const PaymentLinkCard = ({ link }) => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'active':
-        return { icon: 'CheckCircle', color: 'text-success' };
-      case 'inactive':
-        return { icon: 'XCircle', color: 'text-muted-foreground' };
-      case 'expired':
-        return { icon: 'Clock', color: 'text-destructive' };
-      default:
-        return { icon: 'Circle', color: 'text-muted-foreground' };
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const baseClasses = "inline-flex items-center px-2 py-1 text-xs font-medium rounded-full";
-    
-    switch (status) {
-      case 'active':
-        return `${baseClasses} bg-success/10 text-success`;
-      case 'inactive':
-        return `${baseClasses} bg-muted text-muted-foreground`;
-      case 'expired':
-        return `${baseClasses} bg-destructive/10 text-destructive`;
-      default:
-        return `${baseClasses} bg-muted text-muted-foreground`;
-    }
-  };
-
-  const handleCardClick = () => {
-    // Navigate to specific payment link page
-    navigate(`/payment-links/${link?.id}`);
-  };
-
-  const handleAnalyticsClick = (e) => {
-    e?.stopPropagation();
-    // Open LinkAnalyticsModal
-    if (onAnalytics) {
-      onAnalytics(link);
-    } else {
-      console.log('Opening LinkAnalyticsModal for:', link?.id);
-    }
-  };
-
-  const handleCopyLink = async (e) => {
-    e?.stopPropagation();
-    setIsLoading(true);
-    
+  const handleCopyLink = async () => {
     try {
-      await navigator.clipboard?.writeText(link?.url);
-      // In a real app, you'd show a toast notification here
-      console.log('Link copied to clipboard:', link?.url);
-    } catch (error) {
-      console.error('Failed to copy link:', error);
-    } finally {
-      setIsLoading(false);
+      await navigator?.clipboard?.writeText(link?.url);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
     }
   };
 
-  const handleEditClick = (e) => {
-    e?.stopPropagation();
-    if (onEdit) {
-      onEdit(link);
+  const handleViewDetails = () => {
+    // ✅ FIXED — Navigate to correct /dashboard/links/{id} route
+    navigate(`/dashboard/links/${link?.id}`);
+  };
+
+  const handleViewAnalytics = () => {
+    // ✅ FIXED — Navigate to correct /dashboard/links/{id} route with analytics focus
+    navigate(`/dashboard/links/${link?.id}`, { state: { tab: 'analytics' } });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'text-green-600 bg-green-100 border-green-200';
+      case 'inactive':
+        return 'text-gray-600 bg-gray-100 border-gray-200';
+      case 'expired':
+        return 'text-red-600 bg-red-100 border-red-200';
+      default:
+        return 'text-gray-600 bg-gray-100 border-gray-200';
     }
   };
 
-  const handleDeleteClick = (e) => {
-    e?.stopPropagation();
-    if (onDelete) {
-      onDelete(link);
-    }
-  };
-
-  const formatAmount = (amount, currency) => {
+  const formatAmount = (amount, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency?.toUpperCase(),
     })?.format(amount);
   };
 
   const formatDate = (dateString) => {
     return new Date(dateString)?.toLocaleDateString('en-US', {
+      year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+      day: 'numeric'
     });
   };
 
   return (
-    <div 
-      className="bg-card border border-border rounded-lg p-6 hover:shadow-md hover:border-primary/20 transition-smooth cursor-pointer"
-      onClick={handleCardClick}
-    >
+    <div className="bg-card border border-border rounded-xl p-6 hover:shadow-md transition-smooth">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-foreground mb-1">
-            {link?.title}
+            {link?.name || 'Payment Link'}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {link?.description}
+            {link?.description || 'No description provided'}
           </p>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <span className={getStatusBadge(link?.status)}>
-            {link?.status?.charAt(0)?.toUpperCase() + link?.status?.slice(1)}
-          </span>
-        </div>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(link?.status)}`}>
+          {link?.status?.charAt(0)?.toUpperCase() + link?.status?.slice(1) || 'Active'}
+        </span>
       </div>
 
-      {/* Amount and Currency */}
-      <div className="mb-4">
-        <div className="text-2xl font-bold text-foreground">
-          {formatAmount(link?.amount, link?.currency)}
+      {/* Amount and Stats */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <p className="text-xs text-muted-foreground">Amount</p>
+          <p className="text-lg font-semibold text-foreground">
+            {formatAmount(link?.amount, link?.currency)}
+          </p>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {link?.type === 'fixed' ? 'Fixed Amount' : 'Custom Amount'}
+        <div>
+          <p className="text-xs text-muted-foreground">Payments</p>
+          <p className="text-lg font-semibold text-foreground">
+            {link?.paymentCount || 0}
+          </p>
         </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="text-center">
-          <div className="text-lg font-semibold text-foreground">
-            {link?.views || 0}
-          </div>
-          <div className="text-xs text-muted-foreground">Views</div>
-        </div>
-        <div className="text-center">
-          <div className="text-lg font-semibold text-foreground">
-            {link?.payments || 0}
-          </div>
-          <div className="text-xs text-muted-foreground">Payments</div>
-        </div>
-        <div className="text-center">
-          <div className="text-lg font-semibold text-success">
-            {formatAmount(link?.totalEarned || 0, link?.currency)}
-          </div>
-          <div className="text-xs text-muted-foreground">Earned</div>
-        </div>
-      </div>
-
-      {/* Created Date */}
-      <div className="text-xs text-muted-foreground mb-4">
-        Created on {formatDate(link?.createdAt)}
-        {link?.expiresAt && (
-          <span> • Expires {formatDate(link?.expiresAt)}</span>
-        )}
       </div>
 
       {/* Link URL */}
-      <div className="bg-muted rounded-lg p-3 mb-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground font-mono truncate">
-            {link?.url}
+      <div className="mb-4">
+        <p className="text-xs text-muted-foreground mb-1">Payment URL</p>
+        <div className="flex items-center space-x-2 p-2 bg-muted rounded-lg">
+          <span className="text-sm text-foreground font-mono flex-1 truncate">
+            {link?.url || `/pay/${link?.id}`}
           </span>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCopyLink}
-            loading={isLoading}
-            className="ml-2"
+            className="text-xs"
           >
-            <Icon name="Copy" size={14} />
+            {isCopied ? (
+              <Icon name="Check" size={14} className="text-green-600" />
+            ) : (
+              <Icon name="Copy" size={14} />
+            )}
           </Button>
         </div>
       </div>
 
+      {/* Metadata */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+        <span>Created: {formatDate(link?.createdAt || new Date())}</span>
+        {link?.expiryDate && (
+          <span>Expires: {formatDate(link?.expiryDate)}</span>
+        )}
+      </div>
+
       {/* Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleViewDetails}
+          className="flex-1"
+          iconName="Eye"
+          iconPosition="left"
+        >
+          View Details
+        </Button>
         <Button
           variant="ghost"
           size="sm"
-          onClick={handleAnalyticsClick}
+          onClick={handleViewAnalytics}
           iconName="BarChart3"
           iconPosition="left"
         >
           Analytics
         </Button>
-        
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleEditClick}
-          >
-            <Icon name="Edit2" size={16} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteClick}
-            className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
-          >
-            <Icon name="Trash2" size={16} />
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleCopyLink}
+          title="Copy Link"
+        >
+          <Icon name="Share" size={16} />
+        </Button>
       </div>
     </div>
   );

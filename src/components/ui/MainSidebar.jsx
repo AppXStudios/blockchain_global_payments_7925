@@ -8,6 +8,7 @@ const MainSidebar = ({ isCollapsed = false, onToggleCollapse }) => {
   const navigate = useNavigate();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
+  // ✅ FIXED SIDEBAR NAVIGATION — ALL ROUTES USE /dashboard/* STRUCTURE
   const navigationItems = [
     {
       label: 'Dashboard',
@@ -17,37 +18,37 @@ const MainSidebar = ({ isCollapsed = false, onToggleCollapse }) => {
     },
     {
       label: 'Payments',
-      path: '/payment-management',
+      path: '/dashboard/payments',
       icon: 'CreditCard',
       tooltip: 'Transaction management'
     },
     {
       label: 'Invoices',
-      path: '/invoice-management',
+      path: '/dashboard/invoices',
       icon: 'FileText',
       tooltip: 'Billing and invoicing'
     },
     {
       label: 'Payment Links',
-      path: '/payment-links',
+      path: '/dashboard/links',
       icon: 'Link',
       tooltip: 'Reusable payment URLs'
     },
     {
       label: 'Withdrawals',
-      path: '/withdrawals',
+      path: '/dashboard/withdrawals',
       icon: 'ArrowUpRight',
       tooltip: 'Fund management'
     },
     {
-      label: 'Account Settings',
-      path: '/account-settings',
+      label: 'Settings',
+      path: '/dashboard/settings',
       icon: 'Settings',
       tooltip: 'Account configuration'
     },
     {
       label: 'Support',
-      path: '/contact',
+      path: '/support',
       icon: 'HelpCircle',
       tooltip: 'Help and support'
     }

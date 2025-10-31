@@ -1,177 +1,143 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const WithdrawalHistory = ({ 
-  withdrawals = [], 
-  onWithdrawalSelect,
-  selectedWithdrawals = [],
-  onSelectionChange 
-}) => {
+const WithdrawalHistory = () => {
   const navigate = useNavigate();
-  const [sortConfig, setSortConfig] = useState({
-    key: 'createdAt',
-    direction: 'desc'
-  });
+  const [selectedWithdrawals, setSelectedWithdrawals] = useState([]);
 
-  // Mock data if no withdrawals provided
-  const mockWithdrawals = [
+  // Mock withdrawal data
+  const withdrawals = [
     {
       id: 'WD-001',
-      amount: 5000.00,
+      amount: 1500.00,
       currency: 'USD',
-      cryptoAmount: 0.125,
-      cryptoCurrency: 'BTC',
       status: 'completed',
-      destination: 'bc1q...xyz123',
-      txHash: '0x1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890',
-      createdAt: '2024-01-15T10:30:00Z',
-      completedAt: '2024-01-15T12:45:00Z',
-      fee: 25.00
+      method: 'Bank Transfer',
+      account: '****1234',
+      requestDate: '2024-10-30T10:30:00Z',
+      processedDate: '2024-10-31T14:20:00Z',
+      fee: 25.00,
+      txHash: '0x1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890'
     },
     {
       id: 'WD-002',
-      amount: 2500.00,
+      amount: 850.75,
       currency: 'USD',
-      cryptoAmount: 1.125,
-      cryptoCurrency: 'ETH',
-      status: 'pending',
-      destination: '0x1234...abcd',
-      txHash: null,
-      createdAt: '2024-01-14T16:20:00Z',
-      completedAt: null,
-      fee: 15.00
+      status: 'processing',
+      method: 'Crypto Wallet',
+      account: '1A2b...Xy9z',
+      requestDate: '2024-10-31T08:15:00Z',
+      processedDate: null,
+      fee: 15.00,
+      txHash: null
     },
     {
       id: 'WD-003',
-      amount: 1000.00,
+      amount: 2250.00,
       currency: 'USD',
-      cryptoAmount: 1000.00,
-      cryptoCurrency: 'USDT',
-      status: 'failed',
-      destination: '0x5678...efgh',
-      txHash: null,
-      createdAt: '2024-01-13T09:15:00Z',
-      completedAt: null,
-      fee: 10.00
+      status: 'pending',
+      method: 'Bank Transfer',
+      account: '****5678',
+      requestDate: '2024-10-31T16:45:00Z',
+      processedDate: null,
+      fee: 35.00,
+      txHash: null
     }
   ];
 
-  const displayWithdrawals = withdrawals?.length > 0 ? withdrawals : mockWithdrawals;
-
-  const getStatusIcon = (status) => {
-    switch (status) {
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
       case 'completed':
-        return { icon: 'CheckCircle', color: 'text-success' };
-      case 'pending':
-        return { icon: 'Clock', color: 'text-warning' };
+        return 'text-green-600 bg-green-100 border-green-200';
       case 'processing':
-        return { icon: 'Loader', color: 'text-primary' };
-      case 'failed':
-        return { icon: 'XCircle', color: 'text-destructive' };
-      default:
-        return { icon: 'Circle', color: 'text-muted-foreground' };
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const baseClasses = "inline-flex items-center px-2 py-1 text-xs font-medium rounded-full";
-    
-    switch (status) {
-      case 'completed':
-        return `${baseClasses} bg-success/10 text-success`;
+        return 'text-blue-600 bg-blue-100 border-blue-200';
       case 'pending':
-        return `${baseClasses} bg-warning/10 text-warning`;
-      case 'processing':
-        return `${baseClasses} bg-primary/10 text-primary`;
+        return 'text-yellow-600 bg-yellow-100 border-yellow-200';
       case 'failed':
-        return `${baseClasses} bg-destructive/10 text-destructive`;
+        return 'text-red-600 bg-red-100 border-red-200';
+      case 'cancelled':
+        return 'text-gray-600 bg-gray-100 border-gray-200';
       default:
-        return `${baseClasses} bg-muted text-muted-foreground`;
+        return 'text-gray-600 bg-gray-100 border-gray-200';
     }
   };
 
-  const openWithdrawalDetailsModal = (withdrawal) => {
-    // Mock modal trigger - in real implementation, this would open the WithdrawalDetailsModal
-    console.log('Opening WithdrawalDetailsModal for:', withdrawal?.id);
-    if (onWithdrawalSelect) {
-      onWithdrawalSelect(withdrawal);
+  const handleRowClick = (withdrawal) => {
+    // ✅ FIXED — Navigate to correct /dashboard/withdrawals/{id} route
+    navigate(`/dashboard/withdrawals/${withdrawal?.id}`);
+  };
+
+  const handleSelectWithdrawal = (withdrawalId) => {
+    setSelectedWithdrawals(prev => 
+      prev?.includes(withdrawalId) 
+        ? prev?.filter(id => id !== withdrawalId)
+        : [...prev, withdrawalId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedWithdrawals?.length === withdrawals?.length) {
+      setSelectedWithdrawals([]);
+    } else {
+      setSelectedWithdrawals(withdrawals?.map(wd => wd?.id));
     }
   };
 
-  const handleSort = (key) => {
-    setSortConfig(prevConfig => ({
-      key,
-      direction: prevConfig?.key === key && prevConfig?.direction === 'asc' ? 'desc' : 'asc'
-    }));
-  };
-
-  const handleBack = () => {
-    navigate(-1);
-  };
-
-  const sortedWithdrawals = React.useMemo(() => {
-    if (!sortConfig?.key) return displayWithdrawals;
-    
-    return [...displayWithdrawals]?.sort((a, b) => {
-      if (a?.[sortConfig?.key] < b?.[sortConfig?.key]) {
-        return sortConfig?.direction === 'asc' ? -1 : 1;
-      }
-      if (a?.[sortConfig?.key] > b?.[sortConfig?.key]) {
-        return sortConfig?.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  }, [displayWithdrawals, sortConfig]);
-
-  const formatAmount = (amount, currency) => {
+  const formatCurrency = (amount, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD'
+      currency: currency?.toUpperCase(),
     })?.format(amount);
   };
 
-  const formatCryptoAmount = (amount, currency) => {
-    return `${amount} ${currency}`;
-  };
-
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return '-';
     return new Date(dateString)?.toLocaleDateString('en-US', {
+      year: 'numeric',
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
-  const truncateAddress = (address) => {
-    if (!address) return 'N/A';
-    return `${address?.slice(0, 8)}...${address?.slice(-6)}`;
-  };
-
   return (
-    <div className="bg-card rounded-lg border border-border">
-      {/* Table Header */}
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      {/* Header */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Withdrawal History</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Track all your withdrawal transactions
+            <h2 className="text-lg font-semibold text-foreground">Withdrawal History</h2>
+            <p className="text-sm text-muted-foreground">
+              {selectedWithdrawals?.length > 0 
+                ? `${selectedWithdrawals?.length} withdrawal(s) selected` 
+                : `${withdrawals?.length} total withdrawals`
+              }
             </p>
           </div>
-          
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            {selectedWithdrawals?.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => console.log('Bulk action triggered')}
+                iconName="MoreHorizontal"
+                iconPosition="left"
+              >
+                Actions
+              </Button>
+            )}
             <Button
-              variant="outline"
-              onClick={handleBack}
-              iconName="ArrowLeft"
+              variant="default"
+              size="sm"
+              onClick={() => navigate('/dashboard/withdrawals/create')}
+              className="gradient-primary"
+              iconName="Plus"
               iconPosition="left"
             >
-              Back
+              New Withdrawal
             </Button>
           </div>
         </div>
@@ -180,177 +146,127 @@ const WithdrawalHistory = ({
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-muted/50">
-            <tr>
+          <thead>
+            <tr className="border-b border-border bg-muted/50">
               <th className="text-left py-3 px-6">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 rounded border-border"
-                  onChange={(e) => {
-                    const allIds = sortedWithdrawals?.map(w => w?.id);
-                    onSelectionChange?.(e?.target?.checked ? allIds : []);
-                  }}
+                  checked={selectedWithdrawals?.length === withdrawals?.length}
+                  onChange={handleSelectAll}
+                  className="rounded border-border"
                 />
               </th>
-              <th 
-                className="text-left py-3 px-6 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                onClick={() => handleSort('id')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Withdrawal ID</span>
-                  <Icon 
-                    name="ArrowUpDown" 
-                    size={14} 
-                    className={sortConfig?.key === 'id' ? 'text-primary' : ''} 
-                  />
-                </div>
-              </th>
-              <th 
-                className="text-left py-3 px-6 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                onClick={() => handleSort('amount')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Amount</span>
-                  <Icon 
-                    name="ArrowUpDown" 
-                    size={14} 
-                    className={sortConfig?.key === 'amount' ? 'text-primary' : ''} 
-                  />
-                </div>
-              </th>
-              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">
-                Destination
-              </th>
-              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">
-                Status
-              </th>
-              <th 
-                className="text-left py-3 px-6 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                onClick={() => handleSort('createdAt')}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>Created</span>
-                  <Icon 
-                    name="ArrowUpDown" 
-                    size={14} 
-                    className={sortConfig?.key === 'createdAt' ? 'text-primary' : ''} 
-                  />
-                </div>
-              </th>
-              <th className="text-right py-3 px-6 text-sm font-medium text-muted-foreground">
-                Actions
-              </th>
+              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Withdrawal ID</th>
+              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Amount</th>
+              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Method</th>
+              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Status</th>
+              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Requested</th>
+              <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Processed</th>
+              <th className="text-right py-3 px-6 text-sm font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {sortedWithdrawals?.map((withdrawal) => {
-              const statusConfig = getStatusIcon(withdrawal?.status);
-              const isSelected = selectedWithdrawals?.includes(withdrawal?.id);
-              
-              return (
-                <tr 
-                  key={withdrawal?.id}
-                  className={`border-b border-border hover:bg-muted/30 cursor-pointer transition-micro ${
-                    isSelected ? 'bg-primary/5' : ''
-                  }`}
-                  onClick={() => openWithdrawalDetailsModal(withdrawal)}
-                >
-                  <td className="py-4 px-6">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 rounded border-border"
-                      checked={isSelected}
-                      onChange={(e) => {
-                        e?.stopPropagation();
-                        const newSelection = isSelected 
-                          ? selectedWithdrawals?.filter(id => id !== withdrawal?.id)
-                          : [...selectedWithdrawals, withdrawal?.id];
-                        onSelectionChange?.(newSelection);
-                      }}
-                    />
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="font-medium text-foreground">
-                      {withdrawal?.id}
-                    </div>
-                    {withdrawal?.txHash && (
-                      <div className="text-sm text-muted-foreground">
-                        {truncateAddress(withdrawal?.txHash)}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="font-semibold text-foreground">
-                      {formatAmount(withdrawal?.amount, withdrawal?.currency)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {formatCryptoAmount(withdrawal?.cryptoAmount, withdrawal?.cryptoCurrency)}
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm text-foreground font-mono">
-                      {truncateAddress(withdrawal?.destination)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {withdrawal?.cryptoCurrency} Address
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={getStatusBadge(withdrawal?.status)}>
-                      <Icon 
-                        name={statusConfig?.icon} 
-                        size={12} 
-                        className={`mr-1 ${statusConfig?.color}`} 
-                      />
-                      {withdrawal?.status?.charAt(0)?.toUpperCase() + withdrawal?.status?.slice(1)}
+            {withdrawals?.map((withdrawal) => (
+              <tr 
+                key={withdrawal?.id}
+                className="border-b border-border hover:bg-muted/50 transition-smooth cursor-pointer"
+                onClick={() => handleRowClick(withdrawal)}
+              >
+                <td className="py-4 px-6">
+                  <input
+                    type="checkbox"
+                    checked={selectedWithdrawals?.includes(withdrawal?.id)}
+                    onChange={(e) => {
+                      e?.stopPropagation();
+                      handleSelectWithdrawal(withdrawal?.id);
+                    }}
+                    className="rounded border-border"
+                  />
+                </td>
+                <td className="py-4 px-6">
+                  <span className="text-sm font-medium text-foreground">{withdrawal?.id}</span>
+                </td>
+                <td className="py-4 px-6">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-foreground">
+                      {formatCurrency(withdrawal?.amount, withdrawal?.currency)}
                     </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="text-sm text-muted-foreground">
-                      {formatDate(withdrawal?.createdAt)}
-                    </div>
-                    {withdrawal?.completedAt && (
-                      <div className="text-xs text-success">
-                        Completed {formatDate(withdrawal?.completedAt)}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-4 px-6 text-right">
+                    <span className="text-xs text-muted-foreground">
+                      Fee: {formatCurrency(withdrawal?.fee, withdrawal?.currency)}
+                    </span>
+                  </div>
+                </td>
+                <td className="py-4 px-6">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-foreground">{withdrawal?.method}</span>
+                    <span className="text-xs text-muted-foreground font-mono">{withdrawal?.account}</span>
+                  </div>
+                </td>
+                <td className="py-4 px-6">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(withdrawal?.status)}`}>
+                    {withdrawal?.status?.charAt(0)?.toUpperCase() + withdrawal?.status?.slice(1)}
+                  </span>
+                </td>
+                <td className="py-4 px-6">
+                  <span className="text-sm text-muted-foreground">
+                    {formatDate(withdrawal?.requestDate)}
+                  </span>
+                </td>
+                <td className="py-4 px-6">
+                  <span className="text-sm text-muted-foreground">
+                    {formatDate(withdrawal?.processedDate)}
+                  </span>
+                </td>
+                <td className="py-4 px-6">
+                  <div className="flex items-center justify-end space-x-2">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={(e) => {
                         e?.stopPropagation();
-                        openWithdrawalDetailsModal(withdrawal);
+                        handleRowClick(withdrawal);
                       }}
+                      title="View Details"
                     >
                       <Icon name="Eye" size={16} />
                     </Button>
-                  </td>
-                </tr>
-              );
-            })}
+                    {withdrawal?.txHash && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e?.stopPropagation();
+                          window?.open(`https://etherscan.io/tx/${withdrawal?.txHash}`, '_blank');
+                        }}
+                        title="View Transaction"
+                      >
+                        <Icon name="ExternalLink" size={16} />
+                      </Button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* Table Footer */}
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Showing {sortedWithdrawals?.length} of {sortedWithdrawals?.length} withdrawals
-          </span>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" disabled>
-              <Icon name="ChevronLeft" size={16} />
-            </Button>
-            <span className="px-2">Page 1 of 1</span>
-            <Button variant="outline" size="sm" disabled>
-              <Icon name="ChevronRight" size={16} />
-            </Button>
-          </div>
+      {withdrawals?.length === 0 && (
+        <div className="text-center py-12">
+          <Icon name="ArrowUpRight" size={48} className="mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No withdrawals found</h3>
+          <p className="text-muted-foreground mb-4">Get started by creating your first withdrawal request</p>
+          <Button
+            variant="default"
+            onClick={() => navigate('/dashboard/withdrawals/create')}
+            className="gradient-primary"
+            iconName="Plus"
+            iconPosition="left"
+          >
+            New Withdrawal
+          </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

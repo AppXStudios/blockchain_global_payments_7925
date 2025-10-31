@@ -12,42 +12,42 @@ const QuickActions = () => {
       description: "Generate a new payment request",
       icon: "Plus",
       color: "primary",
-      action: () => navigate('/payment-management')
+      action: () => navigate('/dashboard/payments')
     },
     {
       title: "Create Invoice",
       description: "Send an invoice to customer",
       icon: "FileText",
       color: "secondary",
-      action: () => navigate('/invoice-management')
+      action: () => navigate('/dashboard/invoices')
     },
     {
       title: "Generate Payment Link",
       description: "Create reusable payment URL",
       icon: "Link",
       color: "accent",
-      action: () => navigate('/payment-links')
+      action: () => navigate('/dashboard/links')
     },
     {
       title: "Request Withdrawal",
       description: "Transfer funds to your account",
       icon: "ArrowUpRight",
       color: "success",
-      action: () => navigate('/withdrawals')
+      action: () => navigate('/dashboard/withdrawals')
     },
     {
       title: "View All Transactions",
       description: "See complete payment history",
       icon: "History",
       color: "warning",
-      action: () => navigate('/payment-management')
+      action: () => navigate('/dashboard/payments')
     },
     {
       title: "Account Settings",
       description: "Manage your account preferences",
       icon: "Settings",
       color: "muted",
-      action: () => navigate('/account-settings')
+      action: () => navigate('/dashboard/settings')
     }
   ];
 
@@ -102,7 +102,7 @@ const QuickActions = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/docs')}
+              onClick={() => navigate('/documentation')}
               className="flex-1"
             >
               <Icon name="Book" size={14} className="mr-1" />
@@ -111,7 +111,7 @@ const QuickActions = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/contact')}
+              onClick={() => navigate('/support')}
               className="flex-1"
             >
               <Icon name="MessageCircle" size={14} className="mr-1" />

@@ -1,17 +1,8 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
+import { formatCurrency } from '../../../lib/utils/formatCurrency';
 
 const BalanceCard = ({ currency, balance, usdValue, change, changeType }) => {
-  const formatCurrency = (amount, currency) => {
-    if (currency === 'USD') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-      })?.format(amount);
-    }
-    return `${amount} ${currency}`;
-  };
-
   const getChangeColor = () => {
     if (changeType === 'increase') return 'text-success';
     if (changeType === 'decrease') return 'text-destructive';
@@ -24,6 +15,9 @@ const BalanceCard = ({ currency, balance, usdValue, change, changeType }) => {
     return 'Minus';
   };
 
+  // ✅ Apply failsafe patch - convert to uppercase and fallback to USD
+  const safeCurrency = (currency || "USD")?.toUpperCase();
+
   return (
     <div className="bg-card border border-border rounded-xl p-6 hover-lift transition-smooth">
       <div className="flex items-center justify-between mb-4">
@@ -32,8 +26,8 @@ const BalanceCard = ({ currency, balance, usdValue, change, changeType }) => {
             <Icon name="Coins" size={20} color="white" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground">{currency} Balance</h3>
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(balance, currency)}</p>
+            <h3 className="text-sm font-medium text-muted-foreground">{safeCurrency} Balance</h3>
+            <p className="text-2xl font-bold text-foreground">{formatCurrency(balance, safeCurrency)}</p>
           </div>
         </div>
         <div className={`flex items-center space-x-1 ${getChangeColor()}`}>
@@ -42,7 +36,7 @@ const BalanceCard = ({ currency, balance, usdValue, change, changeType }) => {
         </div>
       </div>
       
-      {currency !== 'USD' && (
+      {safeCurrency !== 'USD' && (
         <div className="pt-4 border-t border-border">
           <p className="text-sm text-muted-foreground">
             USD Equivalent: <span className="font-medium text-foreground">{formatCurrency(usdValue, 'USD')}</span>

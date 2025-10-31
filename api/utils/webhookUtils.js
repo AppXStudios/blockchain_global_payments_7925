@@ -1,213 +1,130 @@
+// ✅ WEBHOOK UTILITIES: Enhanced webhook signature verification and processing
 const crypto = require('crypto');
-const { supabase } = require('./supabaseClient');
-const { sendEmail } = require('./notifications');
 
 /**
- * ✅ 3. FIXED WEBHOOKS: HMAC-SHA512 signature verification with sorted keys
- * Uses process.env.NOWPAYMENTS_IPN_SECRET and never logs secrets
+ * ✅ 5. PRODUCTION HARDENING: Safe webhook signature verification
+ * Prevents timing attacks and ensures secure HMAC validation
  */
-function verifyWebhookSignature(payload, signature) {
-  try {
-    if (!signature) {
-      console.error('🚨 Missing webhook signature');
+class WebhookUtils {
+  /**
+   * Verify NOWPayments webhook signature with HMAC-SHA512
+   */
+  static verifyNOWPaymentsSignature(payload, signature, secret) {
+    try {
+      if (!secret || !signature || !payload) {
+        return false;
+      }
+
+      // Sort keys recursively for consistent signature
+      const sortedPayload = this.sortObjectKeys(payload);
+      const sortedString = JSON.stringify(sortedPayload);
+
+      // Create HMAC-SHA512
+      const hmac = crypto?.createHmac('sha512', secret?.trim());
+      hmac?.update(sortedString);
+      const computedSignature = hmac?.digest('hex');
+
+      // Constant-time comparison to prevent timing attacks
+      return this.constantTimeEquals(computedSignature, signature?.toString());
+    } catch (error) {
+      console.error('🚨 Webhook signature verification error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Sort object keys recursively for consistent webhook signatures
+   */
+  static sortObjectKeys(obj) {
+    if (typeof obj !== 'object' || obj === null) {
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      return obj?.map(item => this.sortObjectKeys(item));
+    }
+
+    return Object.keys(obj)?.sort()?.reduce((result, key) => {
+        result[key] = this.sortObjectKeys(obj?.[key]);
+        return result;
+      }, {});
+  }
+
+  /**
+   * Constant-time string comparison to prevent timing attacks
+   */
+  static constantTimeEquals(a, b) {
+    if (a?.length !== b?.length) {
       return false;
     }
 
-    if (!process.env.NOWPAYMENTS_IPN_SECRET) {
-      console.error('🚨 NOWPAYMENTS_IPN_SECRET not configured');
-      return false;
+    let result = 0;
+    for (let i = 0; i < a?.length; i++) {
+      result |= a?.charCodeAt(i) ^ b?.charCodeAt(i);
     }
 
-    // ✅ 3. SORT KEYS before HMAC generation as required by NOWPayments
-    const sortedPayload = {};
-    Object.keys(payload)?.sort()?.forEach(key => {
-      sortedPayload[key] = payload?.[key];
-    });
+    return result === 0;
+  }
 
-    const payloadString = JSON.stringify(sortedPayload);
-    
-    // ✅ 3. USES process.env.NOWPAYMENTS_IPN_SECRET for HMAC-SHA512
-    const expectedSignature = crypto?.createHmac('sha512', process.env.NOWPAYMENTS_IPN_SECRET)?.update(payloadString)?.digest('hex');
+  /**
+   * Extract payment information from webhook payload
+   */
+  static extractPaymentInfo(payload) {
+    return {
+      payment_id: payload?.payment_id || payload?.id,
+      status: payload?.payment_status || payload?.status,
+      amount: payload?.pay_amount || payload?.amount,
+      currency: payload?.pay_currency || payload?.currency,
+      actually_paid: payload?.actually_paid,
+      outcome_amount: payload?.outcome_amount,
+      outcome_currency: payload?.outcome_currency,
+      created_at: payload?.created_at || new Date()?.toISOString()
+    };
+  }
 
-    const isValid = signature === expectedSignature;
-    
-    // ✅ 3. NEVER LOG IPN SECRETS - safe logging only
-    console.log('🔐 Webhook signature verification:', {
-      signature_present: !!signature,
-      expected_length: expectedSignature?.length,
-      actual_length: signature?.length,
-      is_valid: isValid,
-      payload_keys: Object.keys(payload)?.sort()
-    });
+  /**
+   * Determine if webhook event should trigger payment sync
+   */
+  static shouldSyncPayment(status) {
+    const syncStatuses = [
+      'finished', 'paid', 'completed', 'confirmed',
+      'partially_paid', 'failed', 'expired'
+    ];
+    return syncStatuses?.includes(status?.toLowerCase());
+  }
 
-    return isValid;
-  } catch (error) {
-    console.error('🚨 Webhook signature verification error:', error?.message);
-    return false;
+  /**
+   * Generate safe webhook event log (no sensitive data)
+   */
+  static createSafeLogEntry(payload, headers = {}) {
+    return {
+      event_type: payload?.payment_status || payload?.status || 'unknown',
+      payment_id: payload?.payment_id || payload?.id,
+      withdrawal_id: payload?.withdrawal_id,
+      invoice_id: payload?.invoice_id,
+      source_ip: headers?.['x-forwarded-for'] || headers?.['x-real-ip'],
+      user_agent: headers?.['user-agent'],
+      timestamp: new Date()?.toISOString(),
+      has_signature: !!headers?.['x-nowpayments-sig']
+    };
+  }
+
+  /**
+   * Validate webhook payload structure
+   */
+  static validatePayloadStructure(payload) {
+    const requiredFields = ['payment_id', 'payment_status'];
+    const missingFields = requiredFields?.filter(field => 
+      !payload?.hasOwnProperty(field) && !payload?.hasOwnProperty(field?.replace('payment_', ''))
+    );
+
+    return {
+      isValid: missingFields?.length === 0,
+      missingFields,
+      hasPaymentId: !!(payload?.payment_id || payload?.id),
+      hasStatus: !!(payload?.payment_status || payload?.status)
+    };
   }
 }
 
-/**
- * ✅ 3. SAVES ALL WEBHOOK EVENTS TO SUPABASE → webhook_events table
- */
-async function logWebhookEvent(eventType, payload, signature, sourceIp, processedSuccessfully, errorMessage = null) {
-  try {
-    const { data, error } = await supabase?.from('webhook_events')?.insert({
-        event_type: eventType,
-        payload: payload,
-        signature_valid: !!signature && verifyWebhookSignature(payload, signature),
-        source_ip: sourceIp,
-        processed_successfully: processedSuccessfully,
-        error_message: errorMessage,
-        created_at: new Date()?.toISOString()
-      })?.select()?.single();
-
-    if (error) {
-      console.error('🚨 Failed to log webhook event:', error);
-      return null;
-    }
-
-    console.log('📝 Webhook event logged:', {
-      event_id: data?.id,
-      event_type: eventType,
-      processed: processedSuccessfully
-    });
-
-    return data;
-  } catch (error) {
-    console.error('🚨 Error logging webhook event:', error?.message);
-    return null;
-  }
-}
-
-/**
- * ✅ 3. HANDLES: payment events, repeated deposits (parent_payment_id), wrong-asset deposits
- */
-async function updatePaymentStatus(payload) {
-  try {
-    const paymentId = payload?.payment_id;
-    const paymentStatus = payload?.payment_status;
-    const actuallyPaid = payload?.actually_paid;
-    const payCurrency = payload?.pay_currency;
-    const parentPaymentId = payload?.parent_payment_id;
-
-    console.log(`🔄 Updating payment ${paymentId} status to ${paymentStatus}`);
-
-    // Update payment record
-    const { data: payment, error: paymentError } = await supabase?.from('payments')?.update({
-        status: paymentStatus,
-        actually_paid: actuallyPaid,
-        pay_currency: payCurrency,
-        parent_payment_id: parentPaymentId,
-        updated_at: new Date()?.toISOString(),
-        webhook_data: payload
-      })?.eq('nowpayments_id', paymentId)?.select()?.single();
-
-    if (paymentError) {
-      console.error('🚨 Failed to update payment:', paymentError);
-      throw paymentError;
-    }
-
-    console.log(`✅ Payment ${paymentId} updated successfully`);
-    return payment;
-  } catch (error) {
-    console.error('🚨 Error updating payment status:', error?.message);
-    throw error;
-  }
-}
-
-/**
- * ✅ 3. HANDLES: invoice webhook events
- */
-async function updateInvoiceStatus(payload) {
-  try {
-    const invoiceId = payload?.invoice_id;
-    const paymentStatus = payload?.payment_status;
-    const actuallyPaid = payload?.actually_paid;
-
-    console.log(`🔄 Updating invoice ${invoiceId} status to ${paymentStatus}`);
-
-    const { data: invoice, error: invoiceError } = await supabase?.from('invoices')?.update({
-        status: paymentStatus,
-        actually_paid: actuallyPaid,
-        updated_at: new Date()?.toISOString(),
-        webhook_data: payload
-      })?.eq('nowpayments_invoice_id', invoiceId)?.select()?.single();
-
-    if (invoiceError) {
-      console.error('🚨 Failed to update invoice:', invoiceError);
-      throw invoiceError;
-    }
-
-    console.log(`✅ Invoice ${invoiceId} updated successfully`);
-    return invoice;
-  } catch (error) {
-    console.error('🚨 Error updating invoice status:', error?.message);
-    throw error;
-  }
-}
-
-/**
- * ✅ 3. HANDLES: parent payment scenarios (re-deposits)
- */
-async function handleParentPayment(payload) {
-  try {
-    const parentPaymentId = payload?.parent_payment_id;
-    const currentPaymentId = payload?.payment_id;
-
-    console.log(`🔄 Handling parent payment scenario: ${currentPaymentId} → ${parentPaymentId}`);
-
-    // Link the payment to its parent
-    const { data, error } = await supabase?.from('payments')?.update({
-        parent_payment_id: parentPaymentId,
-        is_redeposit: true,
-        updated_at: new Date()?.toISOString()
-      })?.eq('nowpayments_id', currentPaymentId)?.select()?.single();
-
-    if (error) {
-      console.error('🚨 Failed to handle parent payment:', error);
-      throw error;
-    }
-
-    console.log(`✅ Parent payment relationship established: ${currentPaymentId} → ${parentPaymentId}`);
-    return data;
-  } catch (error) {
-    console.error('🚨 Error handling parent payment:', error?.message);
-    throw error;
-  }
-}
-
-/**
- * Send notification for webhook events
- */
-async function sendNotification(eventType, data) {
-  try {
-    // Send email notification (implement based on your notification system)
-    console.log(`📧 Sending ${eventType} notification:`, {
-      type: eventType,
-      data: data
-    });
-
-    // Implementation depends on your notification service (Resend, Twilio, etc.)
-    // Example implementation:
-    // await sendEmail({
-    //   to: merchant.email,
-    //   subject: `Payment ${eventType}`,
-    //   html: generateNotificationEmail(eventType, data)
-    // });
-
-    return true;
-  } catch (error) {
-    console.error('🚨 Error sending notification:', error?.message);
-    return false;
-  }
-}
-
-module.exports = {
-  verifyWebhookSignature,
-  logWebhookEvent,
-  updatePaymentStatus,
-  updateInvoiceStatus,
-  handleParentPayment,
-  sendNotification
-};
+module.exports = WebhookUtils;

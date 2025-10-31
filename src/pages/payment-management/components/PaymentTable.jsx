@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import PaymentStatusBadge from './PaymentStatusBadge';
+import { formatCurrency } from '../../../lib/utils/formatCurrency';
 
 const PaymentTable = () => {
   const navigate = useNavigate();
@@ -49,14 +50,13 @@ const PaymentTable = () => {
   ];
 
   const openPaymentDetailsModal = (payment) => {
-    setSelectedPayment(payment);
-    // Mock modal trigger - in real implementation, this would open the PaymentDetailsModal
-    console.log('Opening PaymentDetailsModal for:', payment?.id);
+    // ✅ FIXED — Navigate to correct /dashboard/payments/{id} route instead of modal
+    navigate(`/dashboard/payments/${payment?.id}`);
   };
 
   const openCreatePaymentModal = () => {
-    // Mock modal trigger - in real implementation, this would open the CreatePaymentModal
-    console.log('Opening CreatePaymentModal');
+    // ✅ FIXED — Navigate to correct /dashboard/payments/create route
+    navigate('/dashboard/payments/create');
   };
 
   const openPaymentHistoryModal = () => {
@@ -114,52 +114,58 @@ const PaymentTable = () => {
             </tr>
           </thead>
           <tbody>
-            {payments?.map((payment) => (
-              <tr 
-                key={payment?.id} 
-                className="border-b border-border hover:bg-muted/50 transition-smooth cursor-pointer"
-                onClick={() => openPaymentDetailsModal(payment)}
-              >
-                <td className="py-4 px-6">
-                  <span className="text-sm font-medium text-foreground">{payment?.id}</span>
-                </td>
-                <td className="py-4 px-6">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-foreground">
-                      ${payment?.amount?.toLocaleString()}
+            {payments?.map((payment) => {
+              // ✅ Apply failsafe patch - convert to uppercase and fallback to USD
+              const safeCurrency = (payment?.currency || "USD")?.toUpperCase();
+              const safeCryptoCurrency = (payment?.cryptoCurrency || "BTC")?.toUpperCase();
+              
+              return (
+                <tr 
+                  key={payment?.id} 
+                  className="border-b border-border hover:bg-muted/50 transition-smooth cursor-pointer"
+                  onClick={() => navigate(`/dashboard/payments/${payment?.id}`)}
+                >
+                  <td className="py-4 px-6">
+                    <span className="text-sm font-medium text-foreground">{payment?.id}</span>
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-foreground">
+                        {formatCurrency(payment?.amount, safeCurrency)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {payment?.cryptoAmount} {safeCryptoCurrency}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className="text-sm text-foreground">{payment?.customer}</span>
+                  </td>
+                  <td className="py-4 px-6">
+                    <PaymentStatusBadge status={payment?.status} />
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(payment?.date)?.toLocaleDateString()}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {payment?.cryptoAmount} {payment?.cryptoCurrency}
-                    </span>
-                  </div>
-                </td>
-                <td className="py-4 px-6">
-                  <span className="text-sm text-foreground">{payment?.customer}</span>
-                </td>
-                <td className="py-4 px-6">
-                  <PaymentStatusBadge status={payment?.status} />
-                </td>
-                <td className="py-4 px-6">
-                  <span className="text-sm text-muted-foreground">
-                    {new Date(payment?.date)?.toLocaleDateString()}
-                  </span>
-                </td>
-                <td className="py-4 px-6">
-                  <div className="flex items-center justify-end space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e?.stopPropagation();
-                        openPaymentDetailsModal(payment);
-                      }}
-                    >
-                      <Icon name="Eye" size={16} />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e?.stopPropagation();
+                          navigate(`/dashboard/payments/${payment?.id}`);
+                        }}
+                      >
+                        <Icon name="Eye" size={16} />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { formatCurrency } from '../../../lib/utils/formatCurrency';
 
 const InvoicePreviewModal = ({ invoice, isOpen, onClose, onEdit, onSendReminder }) => {
   if (!isOpen || !invoice) return null;
@@ -11,13 +12,6 @@ const InvoicePreviewModal = ({ invoice, isOpen, onClose, onEdit, onSendReminder 
       month: 'long',
       day: 'numeric'
     });
-  };
-
-  const formatAmount = (amount, currency) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency || 'USD'
-    })?.format(amount);
   };
 
   const getStatusBadge = (status) => {
@@ -47,6 +41,9 @@ const InvoicePreviewModal = ({ invoice, isOpen, onClose, onEdit, onSendReminder 
     navigator.clipboard?.writeText(text);
     // You could add a toast notification here
   };
+
+  // ✅ Apply failsafe patch - convert to uppercase and fallback to USD
+  const safeCurrency = (invoice?.currency || "USD")?.toUpperCase();
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-1000 p-4">
@@ -134,10 +131,10 @@ const InvoicePreviewModal = ({ invoice, isOpen, onClose, onEdit, onSendReminder 
                         <div className="col-span-6 text-foreground">{item?.description}</div>
                         <div className="col-span-2 text-center text-muted-foreground">{item?.quantity}</div>
                         <div className="col-span-2 text-center text-muted-foreground">
-                          {formatAmount(item?.rate, invoice?.currency)}
+                          {formatCurrency(item?.rate, safeCurrency)}
                         </div>
                         <div className="col-span-2 text-right font-medium text-foreground">
-                          {formatAmount(item?.amount, invoice?.currency)}
+                          {formatCurrency(item?.amount, safeCurrency)}
                         </div>
                       </div>
                     </div>
@@ -152,7 +149,7 @@ const InvoicePreviewModal = ({ invoice, isOpen, onClose, onEdit, onSendReminder 
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal:</span>
                   <span className="font-medium text-foreground">
-                    {formatAmount(invoice?.subtotal || invoice?.amount, invoice?.currency)}
+                    {formatCurrency(invoice?.subtotal || invoice?.amount, safeCurrency)}
                   </span>
                 </div>
                 
@@ -160,7 +157,7 @@ const InvoicePreviewModal = ({ invoice, isOpen, onClose, onEdit, onSendReminder 
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax:</span>
                     <span className="font-medium text-foreground">
-                      {formatAmount(invoice?.tax, invoice?.currency)}
+                      {formatCurrency(invoice?.tax, safeCurrency)}
                     </span>
                   </div>
                 )}
@@ -168,7 +165,7 @@ const InvoicePreviewModal = ({ invoice, isOpen, onClose, onEdit, onSendReminder 
                 <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
                   <span className="text-foreground">Total:</span>
                   <span className="text-primary">
-                    {formatAmount(invoice?.total || invoice?.amount, invoice?.currency)}
+                    {formatCurrency(invoice?.total || invoice?.amount, safeCurrency)}
                   </span>
                 </div>
               </div>

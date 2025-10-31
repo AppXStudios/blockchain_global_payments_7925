@@ -151,7 +151,7 @@ const MerchantDashboard = () => {
       message: "You have a withdrawal request of $5,000 USD pending approval. Processing typically takes 1-2 business days.",
       action: {
         label: "View Details",
-        onClick: () => navigate('/withdrawals')
+        onClick: () => navigate('/dashboard/withdrawals')
       },
       dismissible: true
     },
@@ -162,7 +162,7 @@ const MerchantDashboard = () => {
       message: "You\'re approaching 80% of your monthly API rate limit. Consider upgrading your plan for higher limits.",
       action: {
         label: "Upgrade Plan",
-        onClick: () => navigate('/account-settings')
+        onClick: () => navigate('/dashboard/settings')
       },
       dismissible: true
     }
@@ -178,7 +178,7 @@ const MerchantDashboard = () => {
   }, []);
 
   const handleViewAllTransactions = () => {
-    navigate('/payment-management');
+    navigate('/dashboard/payments');
   };
 
   const handleAlertDismiss = (alertId) => {
@@ -221,7 +221,7 @@ const MerchantDashboard = () => {
               </div>
               <Button
                 variant="default"
-                onClick={() => navigate('/payment-management')}
+                onClick={() => navigate('/dashboard/payments')}
                 className="gradient-primary"
               >
                 <Icon name="Plus" size={16} className="mr-2" />
@@ -234,7 +234,30 @@ const MerchantDashboard = () => {
         <div className="p-6 space-y-6">
           {/* Alert Notifications */}
           <AlertNotifications 
-            alerts={alerts}
+            alerts={[
+              {
+                id: "alert-1",
+                type: "warning",
+                title: "Pending Withdrawal",
+                message: "You have a withdrawal request of $5,000 USD pending approval. Processing typically takes 1-2 business days.",
+                action: {
+                  label: "View Details",
+                  onClick: () => navigate('/dashboard/withdrawals')
+                },
+                dismissible: true
+              },
+              {
+                id: "alert-2",
+                type: "info",
+                title: "API Rate Limit Notice",
+                message: "You're approaching 80% of your monthly API rate limit. Consider upgrading your plan for higher limits.",
+                action: {
+                  label: "Upgrade Plan",
+                  onClick: () => navigate('/dashboard/settings')
+                },
+                dismissible: true
+              }
+            ]}
             onDismiss={handleAlertDismiss}
           />
 

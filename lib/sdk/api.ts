@@ -2,26 +2,32 @@
 // Complete API integration layer matching backend routes
 
 import client from './client';
-import type {
-  APIResponse,
-  PaginatedResponse,
-  User,
-  UserProfile,
-  Merchant,
+import {
   Payment,
-  CreatePaymentRequest,
   Invoice,
-  CreateInvoiceRequest,
+  Merchant,
   Withdrawal,
-  CreateWithdrawalRequest,
-  PaymentLink,
-  CreateLinkRequest,
-  CheckoutPayment,
-  SignupRequest,
-  LoginRequest
-} from './types';
-import { Payment, Invoice, Withdrawal, PaymentLink, CreateLinkRequest, CheckoutPayment, Merchant } from '@/lib/sdk/types';
+  PaymentLink
+} from "./types";
 
+const BASE_URL =
+  typeof window !== "undefined" ?"/api" : process.env.NEXT_PUBLIC_API_URL ||"/api";
+
+export const api = {
+  async get(path) {
+    const r = await fetch(`${BASE_URL}${path}`);
+    return r.json();
+  },
+
+  async post(path, data = {}) {
+    const r = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    return r.json();
+  }
+};
 
 /**
  * ▶ 5.2 — SDK QA: Fixed API methods to align with backend routes

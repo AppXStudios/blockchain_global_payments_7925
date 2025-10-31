@@ -23,14 +23,14 @@ const PublicHeader = () => {
     },
     {
       label: 'Documentation',
-      href: '/docs',
-      path: '/docs',
+      href: '/documentation',
+      path: '/documentation',
       external: false
     },
     {
       label: 'Support',
-      href: '/contact',
-      path: '/contact',
+      href: '/support',
+      path: '/support',
       external: false
     }
   ];

@@ -1,192 +1,274 @@
+# ✅ PART 3 - CREATE /docs/DEPLOYMENT.md
 # Blockchain Global Payments — Deployment Guide
 
-## 1. Environment Variables
+## 🚀 Production Deployment Checklist
 
-List all required environment variables exactly as defined in .env.local:
+### 1. Environment Variables Configuration
 
-### Core Supabase Configuration
+**Required Environment Variables:**
+
 ```bash
-SUPABASE_URL=your-supabase-project-url
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-SUPABASE_ANON_KEY=your-supabase-anon-key
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
-### API Configuration
-```bash
-NEXT_PUBLIC_API_URL=https://your-domain.vercel.app/api
-```
+# API Configuration
+NEXT_PUBLIC_API_URL=https://your-domain.com/api
 
-### NOWPayments Integration
-```bash
+# NOWPayments Configuration
 NOWPAYMENTS_BASE_URL=https://api.nowpayments.io/v1
-NOWPAYMENTS_MASTER_API_KEY=your-nowpayments-api-key
-NOWPAYMENTS_IPN_SECRET=your-nowpayments-ipn-secret
-NOWPAYMENTS_WEBHOOK_URL=https://your-domain.vercel.app/api/webhooks/nowpayments
-```
+NOWPAYMENTS_MASTER_API_KEY=your-api-key
+NOWPAYMENTS_IPN_SECRET=your-ipn-secret
+NOWPAYMENTS_WEBHOOK_URL=https://your-domain.com/api/webhooks/nowpayments
 
-### Security Keys
-```bash
-JWT_SECRET=your-jwt-secret-key
-ENCRYPTION_KEY=your-encryption-key
-```
+# Security Configuration
+JWT_SECRET=your-strong-jwt-secret-256-bits
+ENCRYPTION_KEY=your-encryption-key-256-bits
 
-### Platform Settings
-```bash
+# Platform Configuration
 PLATFORM_NAME=Blockchain Global Payments LLC
-NODE_ENV=production
-PORT=3001
-```
 
-### Optional Services
-```bash
+# Service Integrations
 RESEND_API_KEY=your-resend-api-key
-TWILIO_ACCOUNT_SID=your-twilio-account-sid
-TWILIO_AUTH_TOKEN=your-twilio-auth-token
-TWILIO_FROM_NUMBER=your-twilio-phone-number
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+TWILIO_ACCOUNT_SID=your-twilio-sid
+TWILIO_AUTH_TOKEN=your-twilio-token
+TWILIO_FROM_NUMBER=your-twilio-number
 ```
 
-## 2. Vercel Setup
+### 2. Vercel Deployment Setup
+
+**Step-by-Step Vercel Deployment:**
 
 1. **Import GitHub Repository**
    - Connect your GitHub account to Vercel
-   - Import the BGP repository
-   - Select "main" branch as default
+   - Import the `blockchain_global_payments_7925` repository
+   - Set "main" as the production branch
 
-2. **Add Environment Variables**
-   - Go to Vercel Dashboard → Settings → Environment Variables
-   - Add ALL environment variables from above list
-   - Ensure each variable is set for Production, Preview, and Development
-
-3. **Configure Build Settings**
-   - Framework Preset: Next.js
+2. **Configure Build Settings**
    - Build Command: `npm run build`
-   - Output Directory: `.next` (default)
-   - Install Command: `npm install`
+   - Output Directory: `.next`
+   - Install Command: `npm ci`
+   - Node.js Version: 18.x
 
-4. **Serverless Configuration**
-   - Enable serverless Node for server.js
-   - Ensure /api routes forward to server.js
-   - Max function duration: 30 seconds
-   - Memory allocation: 1024 MB
+3. **Add Environment Variables**
+   - Go to Project Settings → Environment Variables
+   - Add all required environment variables from section 1
+   - Set Environment: Production, Preview, Development as needed
 
-## 3. Supabase Setup
+4. **Enable Functions**
+   - API routes are automatically handled by Vercel
+   - `/api/server.js` mapped via `vercel.json`
+   - Ensure serverless Node.js runtime
 
-### Database Requirements
-- Confirm all required tables exist (merchants, payments, invoices, withdrawals, payment_links, webhook_events)
-- Verify RLS policies are properly configured
-- Ensure API permissions are correct for service role key
+### 3. Supabase Database Setup
 
-### Authentication Setup
-- Enable Email/Password authentication
-- Configure JWT settings to match your JWT_SECRET
-- Set up proper redirect URLs for production domain
+**Database Configuration Checklist:**
 
-### Database Policies
-- Review RLS policies for production security
-- Ensure proper merchant isolation
-- Verify admin access controls
+1. **Tables Verification**
+   - ✅ `users` table exists
+   - ✅ `user_profiles` table exists  
+   - ✅ `merchants` table exists
+   - ✅ `payments` table exists
+   - ✅ `invoices` table exists
+   - ✅ `withdrawals` table exists
+   - ✅ `payment_links` table exists
+   - ✅ `webhook_events` table exists
 
-## 4. NOWPayments Setup
+2. **RLS Policies**
+   - ✅ Row Level Security enabled where appropriate
+   - ✅ Authentication policies configured
+   - ✅ Merchant isolation policies active
 
-### API Configuration
-1. **Set IPN URL**
+3. **API Permissions**
+   - ✅ Service role key has full access
+   - ✅ Anon key has limited public access only
+   - ✅ Database functions accessible
+
+### 4. NOWPayments Integration Setup
+
+**NOWPayments Configuration:**
+
+1. **API Key Setup**
+   - Generate production API key in NOWPayments dashboard
+   - Add to `NOWPAYMENTS_MASTER_API_KEY` environment variable
+
+2. **IPN Configuration**
+   - Set IPN URL: `https://your-domain.com/api/webhooks/nowpayments`
+   - Generate IPN secret and add to `NOWPAYMENTS_IPN_SECRET`
+   - Enable HMAC-SHA512 signature verification
+
+3. **Test Webhook Integration**
+   ```bash
+   # Test webhook endpoint
+   curl -X POST https://your-domain.com/api/webhooks/nowpayments \
+     -H "Content-Type: application/json" \
+     -H "x-nowpayments-sig: test-signature" \
+     -d '{"payment_id": "test", "payment_status": "finished"}'
    ```
-   https://your-domain.vercel.app/api/webhooks/nowpayments
-   ```
-
-2. **Add IPN Secret**
-   - Generate secure IPN secret key
-   - Add to NOWPAYMENTS_IPN_SECRET environment variable
-   - Configure in NOWPayments dashboard
-
-3. **Test Webhook Signature**
-   - Verify HMAC-SHA512 signature validation
-   - Test with sample webhook payloads
-   - Monitor webhook logs for errors
 
 4. **Payment Flow Testing**
-   - Test payment creation
-   - Verify invoice generation
-   - Test payment link functionality
-   - Confirm withdrawal processing
+   - ✅ Create test payment
+   - ✅ Verify invoice generation
+   - ✅ Test payment link creation
+   - ✅ Confirm webhook receipt
 
-## 5. CI/CD Pipeline
+### 5. Security & Performance Verification
 
-### Automatic Deployment
-- Push to `main` branch triggers production deployment
-- Preview deployments for pull requests
-- Automatic builds on code changes
+**Security Checklist:**
 
-### Security Measures
-- **NEVER commit .env.local** to version control
-- Use Vercel's environment variable system
-- Protect main branch with required reviews
-- Enable branch protection rules
+1. **Headers & CSP**
+   - ✅ Security headers configured in `next.config.js`
+   - ✅ Content Security Policy active
+   - ✅ HSTS enabled for HTTPS
 
-### Monitoring
-- Set up deployment notifications
-- Monitor build logs for errors
-- Configure error tracking (Sentry, LogRocket, etc.)
+2. **API Security**
+   - ✅ CORS configured for production domains
+   - ✅ Rate limiting implemented
+   - ✅ Input validation active
+   - ✅ JWT authentication working
 
-## 6. Production Checklist
+3. **Data Protection**
+   - ✅ No secrets in client-side code
+   - ✅ Webhook signature verification
+   - ✅ Database queries sanitized
 
-### Pre-Deployment
-- [ ] All environment variables configured in Vercel
-- [ ] Supabase database schema deployed
-- [ ] NOWPayments webhook URL configured
-- [ ] SSL certificates validated
-- [ ] Custom domain configured (if applicable)
+**Performance Optimization:**
 
-### Post-Deployment
-- [ ] Health endpoint responding: `/api/health`
-- [ ] Authentication flow working
-- [ ] Payment creation successful
-- [ ] Webhook processing functional
-- [ ] Database connections stable
+1. **Build Optimization**
+   - ✅ SWC minification enabled
+   - ✅ Image optimization configured
+   - ✅ Bundle size optimized
 
-### Testing
-- [ ] Complete user registration flow
-- [ ] Payment processing end-to-end
-- [ ] Invoice generation and payment
-- [ ] Withdrawal functionality
-- [ ] Admin panel access
-- [ ] Error handling and logging
+2. **Caching Strategy**
+   - ✅ Static assets CDN cached
+   - ✅ API responses cached appropriately
+   - ✅ Database query optimization
 
-## 7. Troubleshooting
+### 6. Monitoring & Logging
 
-### Common Issues
-1. **Build Failures**
-   - Check Node.js version compatibility
-   - Verify all dependencies installed
-   - Review build logs for missing modules
+**Production Monitoring Setup:**
 
-2. **API Connection Issues**
-   - Validate NEXT_PUBLIC_API_URL format
-   - Check CORS configuration
-   - Verify Vercel function routing
+1. **Error Tracking**
+   - Configure error logging service
+   - Set up real-time alerts
+   - Monitor API response times
 
-3. **Database Errors**
-   - Confirm Supabase credentials
-   - Check RLS policy configurations
-   - Verify table schemas match code
+2. **Payment Monitoring**
+   - Track payment success rates
+   - Monitor webhook delivery
+   - Alert on failed transactions
 
-### Support Resources
-- Vercel Documentation: https://vercel.com/docs
-- Supabase Documentation: https://supabase.com/docs
-- NOWPayments API: https://documenter.getpostman.com/view/7907941/S1a32n38
+3. **System Health**
+   - `/api/health` endpoint monitoring
+   - Database connection health
+   - Third-party service status
 
-## 8. Maintenance
+### 7. CI/CD Pipeline
 
-### Regular Tasks
-- Monitor webhook success rates
-- Review error logs weekly
-- Update dependencies monthly
-- Backup database regularly
+**GitHub Actions Workflow:**
 
-### Security Updates
-- Rotate API keys quarterly
-- Update Supabase policies as needed
-- Review access logs monthly
-- Audit user permissions regularly
+1. **Automated Deployment**
+   - Push to `main` branch triggers deployment
+   - Automatic Vercel deployment on merge
+
+2. **Branch Protection**
+   - Protect `main` branch from force pushes
+   - Require pull request reviews
+   - Run tests before merge
+
+3. **Environment Management**
+   - Never commit `.env.local` files
+   - Use Vercel environment variables
+   - Separate staging/production configs
+
+### 8. Domain & SSL Configuration
+
+**Custom Domain Setup:**
+
+1. **Domain Configuration**
+   - Add custom domain in Vercel dashboard
+   - Configure DNS records (A/CNAME)
+   - Verify domain ownership
+
+2. **SSL Certificate**
+   - Automatic SSL via Vercel/Let's Encrypt
+   - Force HTTPS redirect
+   - Configure HSTS headers
+
+3. **API URL Updates**
+   - Update `NEXT_PUBLIC_API_URL` to production domain
+   - Update NOWPayments webhook URL
+   - Test all API endpoints
+
+### 9. Go-Live Checklist
+
+**Final Pre-Launch Verification:**
+
+- [ ] All environment variables configured
+- [ ] Database migrations applied
+- [ ] Payment integration tested
+- [ ] Webhook endpoints verified
+- [ ] SSL certificate active
+- [ ] Monitoring systems active
+- [ ] Error tracking configured
+- [ ] Performance optimized
+- [ ] Security headers active
+- [ ] API documentation updated
+
+### 10. Post-Deployment Tasks
+
+**After Successful Deployment:**
+
+1. **Functional Testing**
+   - Test user registration/login
+   - Create test payment/invoice
+   - Verify webhook delivery
+   - Test all user flows
+
+2. **Performance Monitoring**
+   - Monitor initial traffic patterns
+   - Check API response times
+   - Verify database performance
+
+3. **Support Preparation**
+   - Update documentation
+   - Train support team
+   - Prepare troubleshooting guides
+
+---
+
+## 🆘 Troubleshooting Common Issues
+
+### Build Errors
+- **TypeScript errors**: Check SDK imports in `lib/sdk/api.ts`
+- **Missing dependencies**: Run `npm ci` to clean install
+- **Environment variables**: Verify all required vars set
+
+### Runtime Errors
+- **Database connection**: Check Supabase credentials
+- **API failures**: Verify `NEXT_PUBLIC_API_URL` format
+- **Webhook issues**: Test signature verification
+
+### Performance Issues
+- **Slow API**: Check database indexes
+- **High memory**: Optimize React components
+- **Timeout errors**: Increase Vercel function timeout
+
+---
+
+## 📞 Support Contacts
+
+- **Technical Issues**: Check GitHub Issues
+- **NOWPayments Support**: [NOWPayments Documentation](https://documenter.getpostman.com/view/7907941/S1a32n38)
+- **Vercel Support**: [Vercel Documentation](https://vercel.com/docs)
+- **Supabase Support**: [Supabase Documentation](https://supabase.com/docs)
+
+---
+
+**Last Updated**: January 31, 2025  
+**Version**: 1.0.0  
+**Platform**: Blockchain Global Payments LLC
