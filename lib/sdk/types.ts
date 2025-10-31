@@ -1,3 +1,7 @@
+// ===========================
+// CORE ENTITY TYPES
+// ===========================
+
 export interface Merchant {
   id: string;
   email?: string;
@@ -53,4 +57,16 @@ export interface PaymentLink {
   currency?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+// ===========================
+// API RESPONSE TYPES
+// ===========================
+
+export interface APIResponse<T = any> {
+  success?: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  code?: string;
 }
